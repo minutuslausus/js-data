@@ -388,4 +388,94 @@ describe('DS#loadRelations', function () {
       }
     }, 30);
   });
+  it('should work in hasMany "localKeys" mode with arrays', function () {
+    var Foo = store.defineResource({
+      name: 'foo',
+      relations: {
+        hasMany: {
+          bar: {
+            localKeys: 'barIds',
+            localField: 'bars'
+          }
+        }
+      }
+    });
+    store.defineResource({
+      name: 'bar'
+    });
+    var _this = this;
+    var foo = Foo.inject({
+      id: 1,
+      barIds: [4, 7, 9]
+    });
+    var barsData = [
+      {
+        id: 4
+      },
+      {
+        id: 7
+      },
+      {
+        id: 9
+      }
+    ];
+    setTimeout(function () {
+      assert.equal(1, _this.requests.length);
+      assert.equal(_this.requests[0].url, 'http://test.js-data.io/bar?where=%7B%22id%22:%7B%22in%22:%5B4,7,9%5D%7D%7D');
+      assert.equal(_this.requests[0].method, 'GET');
+      _this.requests[0].respond(200, { 'Content-Type': 'application/json' }, DSUtils.toJson(barsData));
+    }, 60);
+    return Foo.loadRelations(foo, ['bar']).then(function (foo) {
+      assert.deepEqual(DSUtils.toJson(foo.bars), DSUtils.toJson(barsData));
+    });
+  });
+
+  it('should work in hasMany "localKeys" mode with objects', function () {
+    var Foo = store.defineResource({
+      name: 'foo',
+      relations: {
+        hasMany: {
+          bar: {
+            localKeys: 'barIds',
+            localField: 'bars'
+          }
+        }
+      }
+    });
+    store.defineResource({
+      name: 'bar'
+    });
+    var _this = this;
+    var foo = Foo.inject({
+      id: 1,
+      barIds: {
+        4: true,
+        7: true,
+        9: true
+      }
+    });
+    var barsData = [
+      {
+        id: 4
+      },
+      {
+        id: 7
+      },
+      {
+        id: 9
+      }
+    ];
+    setTimeout(function () {
+      assert.equal(1, _this.requests.length);
+      assert.equal(_this.requests[0].url, 'http://test.js-data.io/bar?where=%7B%22id%22:%7B%22in%22:%5B%224%22,%227%22,%229%22%5D%7D%7D');
+      assert.equal(_this.requests[0].method, 'GET');
+      _this.requests[0].respond(200, { 'Content-Type': 'application/json' }, DSUtils.toJson(barsData));
+    }, 60);
+    return Foo.loadRelations(foo, ['bar']).then(function (foo) {
+      console.log(foo);
+      console.log(foo.bars);
+      assert.deepEqual(DSUtils.toJson(foo.bars), DSUtils.toJson(barsData));
+    });
+  });
+
 });
